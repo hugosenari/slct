@@ -9,7 +9,7 @@ class cut(object):
         self.value = cols[0]
         self.descr = ""
         if len(cols) > 1:
-            self.descr = self.sep.join(cols[1:-1])
+            self.descr = self.sep.join(cols[1:])
 
 
 class cu_widget(object):
@@ -22,13 +22,18 @@ class cu_widget(object):
         self.screen = screen
         
     def to_screen(self, attr = 0):
-        SCREEN_HEIGHT, SCREEN_WIDTH = self.screen.getmaxyx()
-        i = 0
-        for line in self.content.split("\n"):
-            line = line if len(line) > SCREEN_WIDTH else line[:SCREEN_WIDTH]
-            if self.pos[cu_widget.Y] + i < SCREEN_HEIGHT: 
-                self.screen.addstr(self.pos[cu_widget.Y] + i , self.pos[cu_widget.X], line, attr)
-            i += 1
+        if self.screen:
+            SCREEN_HEIGHT, SCREEN_WIDTH = self.screen.getmaxyx()
+            i = 0
+            for line in self.content.split("\n"):
+                line = line[:SCREEN_WIDTH - 1 ]
+                if self.pos[cu_widget.Y] + i < SCREEN_HEIGHT:
+                    try:
+                        self.screen.addstr(self.pos[cu_widget.Y] + i , self.pos[cu_widget.X], " " * (SCREEN_WIDTH-1))
+                        self.screen.addstr(self.pos[cu_widget.Y] + i , self.pos[cu_widget.X], line, attr)
+                    except:
+                        self.log('error')
+                i += 1
         return self
     
     def log(self, text, n=0):
@@ -88,7 +93,7 @@ class Checkbox(cu_widget):
     def __init__(self, value, title = "", state=False, stdscr=None, pos = [0 , 0]):
         self.state = state
         self.value = value
-        self.title = title 
+        self.title = title
         super(Checkbox, self).__init__(Checkbox.FORMAT.format(
             STATUS=Checkbox.CHECKED if state else Checkbox.UNCHECKED,
             VALUE=value,
@@ -105,7 +110,13 @@ class Checkbox(cu_widget):
             VALUE=self.value,
             TITLE=self.title)
         return self
-
+    
+    def hover(self):
+        self.to_screen(curses.A_BOLD)
+        if self.screen:
+            self.screen.move(self.pos[cu_widget.Y], Checkbox.XPOS)
+        return self
+    
 
 class Cu(object):
     def __enter__(self):
@@ -116,16 +127,16 @@ class Cu(object):
         self.SCREEN_HEIGHT, self.SCREEN_WIDTH = self.stdscr.getmaxyx()
         self.cursor_pos = 0
         self.header = Header(self.stdscr, "SeLeCT",
-        """
-        ## Space: (un)check,
-        ## U: move cursor up
-        ## D: move cursor down
-        ## Return: continue
-        ## A: select all
-        ## N: select none
-        ## Q: quit
-        """)
+        """        Space: (un)check,
+        U: move cursor up
+        D: move cursor down
+        Return: continue
+        A: select all
+        N: select none
+        Q: quit""")
         self.br = Br(self.SCREEN_WIDTH)
+        self.content_size = self.SCREEN_HEIGHT - len(self.header) - len(self.br)
+        self.showing = {'begin': 0, 'end':0}
         self.lines = []
         self.exit_status = 0
         return self
@@ -134,20 +145,24 @@ class Cu(object):
         curses.nocbreak()
         curses.echo()
         curses.endwin()
-
-    def list(self, lines):
-        self.stdscr.addstr(str(len(lines)))
-        prev = self.br
+    
+    def add(self, lines):
         for line in lines:
             if len(line.replace(' ', '')) > 0:
                 cutie = cut(line)
                 checkbox = Checkbox(cutie.value, cutie.descr, False)
-                self.lines.append(checkbox) 
-                prev << checkbox
-                prev = checkbox
-        line = self.lines[self.cursor_pos]
-        line.to_screen(curses.A_BOLD)            
-        self.stdscr.move(self.header + self.br + self.cursor_pos, Checkbox.XPOS) 
+                self.lines.append(checkbox)
+        self.list()
+        return self
+
+    def list(self, begin=0):
+        prev = self.br
+        self.showing = {'begin': begin, 'end': self.content_size + begin}
+        for checkbox in self.lines[begin:self.content_size + begin]:
+            prev << checkbox
+            prev = checkbox
+        self.update()
+        return self
         
     def updown(self, direction = 1):
         line = self.lines[self.cursor_pos]
@@ -157,20 +172,20 @@ class Cu(object):
             self.cursor_pos = 0
         elif self.cursor_pos >= len(self.lines):
             self.cursor_pos = len(self.lines) - 1
-        line = self.lines[self.cursor_pos]
-        line.to_screen(curses.A_BOLD)
-        self.stdscr.move(self.header + self.br + self.cursor_pos, Checkbox.XPOS)
-            
+        if self.cursor_pos >= self.showing.get('end'):
+            self.list(self.cursor_pos - self.content_size + 1)
+        elif self.cursor_pos <= self.showing.get('begin'):
+            self.list(self.cursor_pos)
+
     def checkuncheck(self):
         line = self.lines[self.cursor_pos]
-        line.change().to_screen(curses.A_BOLD)
-        self.stdscr.move(self.header + self.br + self.cursor_pos, Checkbox.XPOS)
-        self.update()
+        line.change()
     
     def checkuncheckall(self, status=True):
         for line in self.lines:
-            line.change(status).to_screen()
-        self.update()
+            line.change(status)
+            line.to_screen()
+
         
     def allchecked(self, status = True):
         for line in self.lines:
@@ -178,16 +193,18 @@ class Cu(object):
                 yield line
 
     def update(self):
+        if len(self.lines):
+            line = self.lines[self.cursor_pos]
+            line.hover()
         self.stdscr.refresh()
         
     def main(self, npt):
         self.header.to_screen()
         self.header << self.br
         if len(npt) > 0:
-            self.list(npt.split("\n"))
-            
+            self.add(npt.split("\n"))
+        self.update()
         while True:
-            self.update()
             cbin = self.getch()
             c = cbin.decode("utf-8")
             if c.lower() == 'q':
@@ -199,6 +216,7 @@ class Cu(object):
             elif c.lower() == 'n': self.checkuncheckall(False)
             elif c.lower() == 'u': self.updown(-1)
             elif c.lower() == 'd': self.updown()
+            self.update()
 
     def getch(self):
         fd = sys.stdin.fileno()
