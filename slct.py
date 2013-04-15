@@ -3,12 +3,13 @@ import curses, sys, tty, os, errno
 
 class cut(object):
     def __init__(self, line, sep=" "):
-        self.line = str(line)
+        self.line = str(line).strip()
         self.sep = sep
-        self.value = self.line.split(self.sep)[0]
+        cols = self.line.split(self.sep)
+        self.value = cols[0]
         self.descr = ""
-        if len(self.line.split(self.sep)) > 1:
-            self.descr = self.sep.join(self.line.split(self.sep)[1:-1])
+        if len(cols) > 1:
+            self.descr = self.sep.join(cols[1:-1])
 
 
 class cu_widget(object):
