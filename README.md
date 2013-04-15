@@ -25,4 +25,5 @@ TO-DO
 -----
 - Paginate for content greater than screen
 - Input format options
+- Output format options
 - Predefined input options (ie: ps aux, top, find ., grep -r)
