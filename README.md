@@ -18,9 +18,11 @@ aptitude search python|cut -c5-|grep "^python3"|head -n 10|python3 src/slct.py
 
 Know Bugs
 ---------
-Input need to be smaller than screen
+- Input need to be smaller than screen
 
 
 TO-DO
 -----
-Paginate for content greater than screen
+- Paginate for content greater than screen
+- Input format options
+- Predefined input options (ie: ps aux, top, find ., grep -r)
