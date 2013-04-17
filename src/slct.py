@@ -271,10 +271,8 @@ if __name__ == "__main__":
     if (exit_status > 0):
         sys.exit(icecream.exit_status)
 
-    fname =  sys.argv[2] if len(sys.argv) > 2 else sys.argv[1]
-    
     try:
-        with open(fname, 'w') as content:
+        with open(sys.argv[2], 'w') as content:
             for line in allchecked:
                 content.write(line.value + "\n")
     except:

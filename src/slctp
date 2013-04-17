@@ -8,7 +8,7 @@ with NamedTemporaryFile(delete=False) as _file:
     fname = _file.name
 
 result = subprocess.call(
-    ["./slct.py", fname]
+    ["./slct.py", fname, fname]
     , stdin=open('/dev/tty', 'r')
     , stderr=open('/dev/tty', 'w')
     , stdout=open('/dev/tty', 'w')
