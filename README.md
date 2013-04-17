@@ -7,23 +7,27 @@ Checkbox pipe comandline
 
 Usage
 -----
-pipe something to slct with "value description" format
-choose what you to output
-xargs to execute command with selected values
+Pipe something to slctp with "value description" format
+choose what values you want to output
+do
 
 ```bash
-git status -s|head -n 10|cut -c4-|python3 slct.py|xargs git add
-aptitude search python|cut -c5-|grep "^python3"|head -n 10|python3 src/slct.py
+git clone git://github.com/hugosenari/slct.git
+cd slct/src
+cat text.txt
+cat text.txt|./slctp
+./slct.py text.txt
+./slct.py text.txt output.txt
 ```
 
 Know Bugs
 ---------
-- Input need to be smaller than screen
+- You can't use Esc to Quit
 
 
 TO-DO
 -----
-- Paginate for content greater than screen
 - Input format options
 - Output format options
-- Predefined input options (ie: ps aux, top, find ., grep -r)
+- Predefined input options (ie: ps aux, top, find ., grep -r, git status -s)
+- User config defined input options (~/.slct.d/userFormat)
