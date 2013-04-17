@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 import curses, sys, tty, os, errno
 
 class cut(object):
@@ -87,7 +87,7 @@ class Header(cu_widget):
 class Checkbox(cu_widget):
     CHECKED = "X"
     UNCHECKED = " "
-    FORMAT = "[{STATUS}] {VALUE} - {TITLE}"
+    FORMAT = "[{STATUS}] {VALUE}   {TITLE}"
     XPOS = 1
 
     def __init__(self, value, title = "", state=False, stdscr=None, pos = [0 , 0]):
@@ -128,11 +128,7 @@ class Cu(object):
         self.cursor_pos = 0
         self.header = Header(self.stdscr, "SeLeCT",
         """        Space: (un)check,
-        U: move cursor up
-        D: move cursor down
         Return: continue
-        A: select all
-        N: select none
         Q: quit""")
         self.br = Br(self.SCREEN_WIDTH)
         self.content_size = self.SCREEN_HEIGHT - len(self.header) - len(self.br)
@@ -205,29 +201,39 @@ class Cu(object):
             self.add(npt.split("\n"))
         self.update()
         while True:
-            cbin = self.getch()
-            c = cbin.decode("utf-8")
-            if c.lower() == 'q':
-                self.quit()
+            cint = self.stdscr.getch()
+            c = chr(cint)
+            if cint in (curses.KEY_UP, 65) or\
+                c.lower() in ('8',):
+                self.updown(-1)
+            elif cint in (curses.KEY_DOWN, 66) or\
+                c.lower() in ('2',):
+                self.updown()
+            elif cint in (curses.KEY_NPAGE, 53) or\
+                c.lower() in ('9',):
+                self.updown(- self.content_size)
+            elif cint in (curses.KEY_PPAGE, 54) or\
+                c.lower() in ('3',):
+                self.updown(self.content_size)
+            elif cint in (curses.KEY_SELECT
+                         , curses.KEY_B2
+                         , curses.KEY_MOUSE
+                         , 68, 67) or\
+                c in (' ', '5', '4', '6', '.'):
+                self.checkuncheck()
+            elif c.lower() in ('*',):
+                self.checkuncheckall()
+            elif c.lower() in ('/',):
+                self.checkuncheckall(False)
+            elif cint in(curses.KEY_ENTER
+                         , curses.KEY_RESUME
+                         , 10) or\
+                c in ('\r',):
                 break
-            elif c == '\r': break
-            elif c == ' ': self.checkuncheck()
-            elif c.lower() == 'a': self.checkuncheckall()
-            elif c.lower() == 'n': self.checkuncheckall(False)
-            elif c.lower() == 'u': self.updown(-1)
-            elif c.lower() == 'd': self.updown()
+            elif c.lower() == 'q':
+                self.cancel()
+                break
             self.update()
-
-    def getch(self):
-        fd = sys.stdin.fileno()
-        tty_mode = tty.tcgetattr(fd)
-        tty.setcbreak(fd)
-        ch = b'-1'
-        try:
-            ch = os.read(fd, 1)
-        finally:
-            tty.tcsetattr(fd, tty.TCSAFLUSH, tty_mode)
-        return ch
 
     def log(self, text, n=0):
         SCREEN_HEIGHT, SCREEN_WIDTH = self.stdscr.getmaxyx()
@@ -238,20 +244,39 @@ class Cu(object):
         self.stdscr.addstr(SCREEN_HEIGHT -1 - n, 0, blank)
         self.stdscr.addstr(SCREEN_HEIGHT -1 - n, 0, text)
         
-    def quit(self):
+    def cancel(self):
         self.exit_status = errno.EPIPE
     
         
 
 if __name__ == "__main__":
-    npt = sys.stdin.read()
-    sys.stdin = open('/dev/tty', 'r')
-    allchecked = []        
-    with Cu() as icecream:
-        icecream.main(npt)
-        allchecked = icecream.allchecked()
-    if (icecream.exit_status > 0):
-        sys.exit(icecream.exit_status)
+    npt = ""
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], 'r') as content:
+            npt = content.read()
     else:
+        sys.exit(errno.ENOTTY)
+        
+    allchecked = []
+    exit_status = 1
+     
+    with Cu() as icecream:
+        try:
+            icecream.main(npt)
+        except Exception as e:
+            pass
+        exit_status = icecream.exit_status
+        allchecked = icecream.allchecked()
+
+    if (exit_status > 0):
+        sys.exit(icecream.exit_status)
+
+    fname =  sys.argv[2] if len(sys.argv) > 2 else sys.argv[1]
+    
+    try:
+        with open(fname, 'w') as content:
+            for line in allchecked:
+                content.write(line.value + "\n")
+    except:
         for line in allchecked:
-            print(str(line.value))
+            print(line.value)        

@@ -1,0 +1,23 @@
+#! /usr/bin/python3
+import subprocess, sys
+from tempfile import NamedTemporaryFile
+
+fname = ""
+with NamedTemporaryFile(delete=False) as _file:
+    _file.write(bytes(sys.stdin.read(), 'UTF-8'))
+    fname = _file.name
+
+result = subprocess.call(
+    ["./slct.py", fname]
+    , stdin=open('/dev/tty', 'r')
+    , stderr=open('/dev/tty', 'w')
+    , stdout=open('/dev/tty', 'w')
+)
+
+if result < 1:
+    with open(fname, "r") as _file:
+        sys.stdout.write(_file.read())
+    with open(fname, "w") as _file:
+        _file.write("")
+else:
+    sys.exit(result)
