@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-import curses, sys, tty, os, errno
+import curses, sys, errno
 
 class cut(object):
     def __init__(self, line, sep=" "):
