@@ -22,6 +22,7 @@ cat text.txt|./slctp
 cat text.txt|./slctp|xargs echo
 ./slct.py text.txt
 ./slct.py text.txt output.txt
+ps ax|./slctp|xargs kill
 ```
 
 Know Bugs
