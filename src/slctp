@@ -7,8 +7,14 @@ with NamedTemporaryFile(delete=False) as _file:
     _file.write(bytes(sys.stdin.read(), 'UTF-8'))
     fname = _file.name
 
+
+col = "0"
+sep = " "
+if len(sys.argv) > 1: col = sys.argv[1]
+if len(sys.argv) > 2: sep = sys.argv[2]
+
 result = subprocess.call(
-    ["./slct.py", fname, fname]
+    ["slct.py", fname, col, sep, fname]
     , stdin=open('/dev/tty', 'r')
     , stderr=open('/dev/tty', 'w')
     , stdout=open('/dev/tty', 'w')

@@ -1,15 +1,20 @@
 #! /usr/bin/env python3
-import curses, sys, errno
+import curses, sys, errno, re
 
 class cut(object):
-    def __init__(self, line, sep=" "):
-        self.line = str(line).strip()
+    def __init__(self, line, sep=" ", col=0):
+        self.line = str(line).strip(sep)
         self.sep = sep
-        cols = self.line.split(self.sep)
-        self.value = cols[0]
+        self.col = col
+        cols = re.compile(sep).split(self.line)
+        if col >= len(cols):
+            col = 0
+        self.value = cols[col]
         self.descr = ""
-        if len(cols) > 1:
-            self.descr = self.sep.join(cols[1:])
+        if col > 0:
+            self.descr = self.sep.join(cols[0:col])
+        if len(cols) > col +1:
+            self.descr = self.descr + self.sep.join(cols[col+1:])
 
 
 class cu_widget(object):
@@ -87,7 +92,7 @@ class Header(cu_widget):
 class Checkbox(cu_widget):
     CHECKED = "X"
     UNCHECKED = " "
-    FORMAT = "[{STATUS}] {VALUE}   {TITLE}"
+    FORMAT = "[{STATUS}] {VALUE} {TITLE} "
     XPOS = 1
 
     def __init__(self, value, title = "", state=False, stdscr=None, pos = [0 , 0]):
@@ -121,6 +126,8 @@ class Checkbox(cu_widget):
 class Cu(object):
     def __enter__(self):
         self.stdscr = curses.initscr()
+        self.sep = " "
+        self.col = 0
         curses.noecho()
         curses.cbreak() 
         curses.flushinp()
@@ -145,7 +152,7 @@ class Cu(object):
     def add(self, lines):
         for line in lines:
             if len(line.replace(' ', '')) > 0:
-                cutie = cut(line)
+                cutie = cut(line, self.sep, self.col)
                 checkbox = Checkbox(cutie.value, cutie.descr, False)
                 self.lines.append(checkbox)
         self.list()
@@ -182,7 +189,6 @@ class Cu(object):
             line.change(status)
             line.to_screen()
 
-        
     def allchecked(self, status = True):
         for line in self.lines:
             if line.state == status:
@@ -194,7 +200,9 @@ class Cu(object):
             line.hover()
         self.stdscr.refresh()
         
-    def main(self, npt):
+    def main(self, npt, col=0, sep=" "):
+        self.col = col
+        self.sep = sep
         self.header.to_screen()
         self.header << self.br
         if len(npt) > 0:
@@ -247,22 +255,32 @@ class Cu(object):
     def cancel(self):
         self.exit_status = errno.EPIPE
     
-        
 
 if __name__ == "__main__":
     npt = ""
+    col = 0
+    sep = " "
+    out_arg = 2
     if len(sys.argv) > 1:
         with open(sys.argv[1], 'r') as content:
             npt = content.read()
     else:
         sys.exit(errno.ENOTTY)
+
+    if len(sys.argv) > 2:
+        col=int(sys.argv[2], 10)
+        out_arg =  out_arg + 1
+        
+    if len(sys.argv) > 3:
+        sep=sys.argv[3]
+        out_arg =  out_arg + 1
         
     allchecked = []
     exit_status = 1
      
     with Cu() as icecream:
         try:
-            icecream.main(npt)
+            icecream.main(npt, col, sep)
         except Exception as e:
             pass
         exit_status = icecream.exit_status
@@ -272,9 +290,13 @@ if __name__ == "__main__":
         sys.exit(icecream.exit_status)
 
     try:
-        with open(sys.argv[2], 'w') as content:
+        if len(sys.argv) > out_arg:
+            with open(sys.argv[out_arg], 'w') as content:
+                for line in allchecked:
+                    content.write(line.value + "\n")
+        else:
             for line in allchecked:
-                content.write(line.value + "\n")
+                print(line.value)
     except:
         for line in allchecked:
-            print(line.value)        
+            print(line.value)
