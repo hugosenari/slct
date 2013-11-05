@@ -253,7 +253,7 @@ class Cu(object):
         self.stdscr.addstr(SCREEN_HEIGHT -1 - n, 0, text)
         
     def cancel(self):
-        self.exit_status = errno.EPIPE
+        self.exit_status = 0.1
     
 
 if __name__ == "__main__":
@@ -287,7 +287,9 @@ if __name__ == "__main__":
         allchecked = icecream.allchecked()
 
     if (exit_status > 0):
-        sys.exit(icecream.exit_status)
+        if exit_status == 0.1:
+            raise SystemExit("User quit slct")
+        raise SystemExit("App exit with status " + str(exit_status))
 
     try:
         if len(sys.argv) > out_arg:
