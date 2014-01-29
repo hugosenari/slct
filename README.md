@@ -84,6 +84,8 @@ Know Bugs
 
 TO-DO
 -----
+
 - Output format options
 - Predefined input options (ie: ps aux, top, find ., grep -r, git status -s)
 - User config defined input options (~/.slct.d/userFormat)
+- Search/Filter option
