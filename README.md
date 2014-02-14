@@ -77,15 +77,23 @@ Installation:
 Copy 'slct.py' and 'slctp' to somewhere in your $PATH
 
 
-Know Bugs
----------
+Know Bugs:
+----------
+
 - You can't use Esc to Quit
 
 
-TO-DO
------
+TO-DO:
+------
 
 - Output format options
 - Predefined input options (ie: ps aux, top, find ., grep -r, git status -s)
 - User config defined input options (~/.slct.d/userFormat)
 - Search/Filter option
+
+
+See Also:
+---------
+
+- [Whiptail](http://en.wikibooks.org/wiki/Bash_Shell_Scripting/Whiptail)
+- [Zenity](https://wiki.gnome.org/action/show/Projects/Zenity?action=show&redirect=Zenity)
